@@ -93,7 +93,14 @@ export interface Challan {
 
 type Tab = "home" | "customers" | "products" | "challans" | "roles" | "users";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:4000/api`;
+  }
+  return "http://localhost:4000/api";
+};
+const API_BASE_URL = getApiBaseUrl();
 
 const demoAccounts = [
   { label: "Admin", email: "admin@distroops.com", password: "admin123", role: "ADMIN" as Role, desc: "Full CRUD & Account Provisioning" },
