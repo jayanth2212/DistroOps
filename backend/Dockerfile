@@ -9,7 +9,7 @@ RUN npm install
 
 COPY . .
 
-RUN npx prisma generate
+RUN node node_modules/prisma/build/index.js generate
 RUN npm run build
 
 EXPOSE 4000
