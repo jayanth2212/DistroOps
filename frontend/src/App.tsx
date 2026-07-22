@@ -13,6 +13,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  createdAt?: string;
 }
 
 export interface FollowUp {
@@ -90,12 +91,12 @@ export interface Challan {
   customer?: Customer;
 }
 
-type Tab = "home" | "customers" | "products" | "challans" | "roles";
+type Tab = "home" | "customers" | "products" | "challans" | "roles" | "users";
 
 const API_BASE_URL = "http://localhost:4000/api";
 
 const demoAccounts = [
-  { label: "Admin", email: "admin@distroops.com", password: "admin123", role: "ADMIN" as Role, desc: "Full CRUD & System Configuration" },
+  { label: "Admin", email: "admin@distroops.com", password: "admin123", role: "ADMIN" as Role, desc: "Full CRUD & Account Provisioning" },
   { label: "Sales", email: "sales@distroops.com", password: "sales123", role: "SALES" as Role, desc: "CRM, Follow-ups, Draft Sales Challans" },
   { label: "Warehouse", email: "warehouse@distroops.com", password: "warehouse123", role: "WAREHOUSE" as Role, desc: "Products, Racks, Manual Stock Adjustments" },
   { label: "Accounts", email: "accounts@distroops.com", password: "accounts123", role: "ACCOUNTS" as Role, desc: "Order Fulfillment, Confirmations, Billing" },
@@ -117,6 +118,7 @@ export default function App() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [challans, setChallans] = useState<Challan[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
 
   // Search & Filters
   const [customerSearch, setCustomerSearch] = useState("");
@@ -130,7 +132,16 @@ export default function App() {
   const [activeProductMovements, setActiveProductMovements] = useState<{ product: Product; movements: StockMovement[] } | null>(null);
   const [activeChallanInvoice, setActiveChallanInvoice] = useState<Challan | null>(null);
 
-  // Form States
+  // User Account Form Modal
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userForm, setUserForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "SALES" as Role,
+  });
+
+  // Customer Form
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerForm, setCustomerForm] = useState({
@@ -146,6 +157,7 @@ export default function App() {
     notes: "",
   });
 
+  // Product Form
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState({
@@ -158,6 +170,7 @@ export default function App() {
     location: "",
   });
 
+  // Challan Form
   const [showChallanModal, setShowChallanModal] = useState(false);
   const [editingChallanId, setEditingChallanId] = useState<string | null>(null);
   const [challanForm, setChallanForm] = useState({
@@ -184,7 +197,7 @@ export default function App() {
 
   const flashSuccess = (msg: string) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 4000);
+    setTimeout(() => setSuccessMsg(null), 4500);
   };
 
   const fetchData = async () => {
@@ -204,8 +217,25 @@ export default function App() {
       if (cData.success) setCustomers(cData.data);
       if (pData.success) setProducts(pData.data);
       if (chData.success) setChallans(chData.data);
+
+      if (currentUser?.role === "ADMIN") {
+        fetchUsers();
+      }
     } catch {
       setError("Failed to connect to backend server. Ensure backend is running on port 4000.");
+    }
+  };
+
+  const fetchUsers = async () => {
+    if (!token || currentUser?.role !== "ADMIN") return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/users`, { headers: authHeaders });
+      const data = await res.json();
+      if (data.success) {
+        setUsersList(data.data);
+      }
+    } catch {
+      // ignore
     }
   };
 
@@ -248,6 +278,34 @@ export default function App() {
     localStorage.removeItem("distroops_token");
     localStorage.removeItem("distroops_user");
     setLandingMode(true);
+  };
+
+  // User Account Creation (Admin Only)
+  const handleCreateUserAccount = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!canAccess(["ADMIN"])) {
+      setError("Permission Denied: Only Admin can create new team accounts.");
+      return;
+    }
+    try {
+      setError(null);
+      const res = await fetch(`${API_BASE_URL}/users`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify(userForm),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error?.message || "Failed to create user account");
+        return;
+      }
+      setShowUserModal(false);
+      flashSuccess(`Account created for ${data.data.name} (${data.data.role})! They can now sign in with email '${data.data.email}'.`);
+      setUserForm({ name: "", email: "", password: "", role: "SALES" });
+      fetchUsers();
+    } catch {
+      setError("Error creating user account");
+    }
   };
 
   // CSV Export Helpers
@@ -803,7 +861,7 @@ export default function App() {
               <span className="pill" style={{ background: "#DCEAE1", color: "#3F7D58", marginBottom: 8 }}>ADMIN ROLE</span>
               <strong>System Administrator</strong>
               <p style={{ fontSize: 13, color: "var(--slate)", margin: "8px 0 0" }}>
-                Full system control. Create, update, and confirm customers, products, inventory movements, and sales challans.
+                Full system control. Provision team accounts, create and manage customers, products, stock, and sales challans.
               </p>
             </div>
 
@@ -941,6 +999,11 @@ export default function App() {
         <button className={`tab-button ${activeTab === "challans" ? "active" : ""}`} onClick={() => setActiveTab("challans")}>
           📜 Sales Challans ({challans.length})
         </button>
+        {currentUser?.role === "ADMIN" && (
+          <button className={`tab-button ${activeTab === "users" ? "active" : ""}`} onClick={() => { setActiveTab("users"); fetchUsers(); }}>
+            🔑 Provision Accounts ({usersList.length})
+          </button>
+        )}
         <button className={`tab-button ${activeTab === "roles" ? "active" : ""}`} onClick={() => setActiveTab("roles")}>
           🛡️ Role Access Matrix
         </button>
@@ -984,6 +1047,12 @@ export default function App() {
             </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
+              {canAccess(["ADMIN"]) && (
+                <button style={{ background: "var(--amber)", color: "#1B2430", fontWeight: 700 }} onClick={() => { setActiveTab("users"); setShowUserModal(true); }}>
+                  🔑 Create New Role Account
+                </button>
+              )}
+
               {canAccess(["ADMIN", "SALES"]) ? (
                 <button onClick={() => { setActiveTab("customers"); openCustomerModal(); }}>+ Add New Customer</button>
               ) : (
@@ -1326,7 +1395,59 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 5: ROLE ACCESS MATRIX */}
+      {/* TAB 5: SYSTEM USER ACCOUNTS PROVISIONING (ADMIN ONLY) */}
+      {activeTab === "users" && currentUser?.role === "ADMIN" && (
+        <div className="card">
+          <div className="section-heading" style={{ marginBottom: 16 }}>
+            <div>
+              <h3>System Role Accounts Provisioning</h3>
+              <div className="module-notice" style={{ fontSize: 13 }}>Create and manage team account credentials for Sales, Warehouse, and Accounts staff.</div>
+            </div>
+            <button style={{ background: "var(--amber)", color: "#1B2430", fontWeight: 700 }} onClick={() => setShowUserModal(true)}>
+              + Create New User Account
+            </button>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Work Email</th>
+                  <th>Assigned Role</th>
+                  <th>User ID</th>
+                  <th>Created Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersList.length === 0 ? (
+                  <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--slate)" }}>Loading system accounts...</td></tr>
+                ) : (
+                  usersList.map((u) => (
+                    <tr key={u.id}>
+                      <td><strong>{u.name}</strong></td>
+                      <td><code>{u.email}</code></td>
+                      <td>
+                        <span className="status-pill" style={{
+                          background: u.role === "ADMIN" ? "#DCEAE1" : u.role === "SALES" ? "#F1D9AE" : u.role === "WAREHOUSE" ? "#DEE6EE" : "#F4DEDB",
+                          color: u.role === "ADMIN" ? "#3F7D58" : u.role === "SALES" ? "#C98A2C" : u.role === "WAREHOUSE" ? "#43607C" : "#B5473F",
+                          fontWeight: 700
+                        }}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td><code>{u.id}</code></td>
+                      <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN") : "System Default"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: ROLE ACCESS MATRIX */}
       {activeTab === "roles" && (
         <div className="card">
           <div className="section-heading" style={{ marginBottom: 16 }}>
@@ -1349,6 +1470,13 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><strong>Provision User Accounts</strong></td>
+                  <td>✅ Create Role Accounts</td>
+                  <td>🔒 Restricted</td>
+                  <td>🔒 Restricted</td>
+                  <td>🔒 Restricted</td>
+                </tr>
                 <tr>
                   <td><strong>Customer Records (CRUD & Delete)</strong></td>
                   <td>✅ Full Access</td>
@@ -1407,6 +1535,47 @@ export default function App() {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 0: USER ACCOUNT PROVISIONING MODAL (ADMIN ONLY) --- */}
+      {showUserModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "grid", placeItems: "center", zIndex: 1000, padding: 16 }}>
+          <div className="card" style={{ maxWidth: 480, width: "100%" }}>
+            <h3>🔑 Provision New Team Role Account</h3>
+            <div style={{ fontSize: 13, color: "var(--slate)", marginBottom: 16 }}>
+              Created accounts will immediately be saved to PostgreSQL and can log in with their email & password.
+            </div>
+
+            <form onSubmit={handleCreateUserAccount} className="form-stack">
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Full Name *</label>
+                <input value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} placeholder="e.g. Rahul Sharma" required />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Work Email *</label>
+                <input type="email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} placeholder="rahul@distroops.com" required />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Password * (Min 6 characters)</label>
+                <input type="password" minLength={6} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} placeholder="Enter secure password" required />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 12, fontWeight: 600 }}>Assign System Role *</label>
+                <select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as Role })}>
+                  <option value="SALES">SALES — Customer CRM, Follow-ups, Sales Challans</option>
+                  <option value="WAREHOUSE">WAREHOUSE — Products Catalog, Rack Placement, Stock Logs</option>
+                  <option value="ACCOUNTS">ACCOUNTS — Order Confirmation, Order Cancellation, GST Invoices</option>
+                  <option value="ADMIN">ADMIN — Full System Access & Provisioning</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
+                <button type="button" className="secondary" onClick={() => setShowUserModal(false)}>Cancel</button>
+                <button type="submit" style={{ background: "var(--amber)", color: "#1B2430", fontWeight: 700 }}>Create Account</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

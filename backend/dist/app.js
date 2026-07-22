@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -192,7 +193,16 @@ app.post('/api/auth/login', async (req, res) => {
             const dbUser = await prisma.user.findUnique({
                 where: { email: email.toLowerCase() }
             });
-            if (!dbUser || dbUser.passwordHash !== password) {
+            let isMatch = false;
+            if (dbUser) {
+                if (dbUser.passwordHash.startsWith('$2a$') || dbUser.passwordHash.startsWith('$2b$')) {
+                    isMatch = await bcrypt.compare(password, dbUser.passwordHash);
+                }
+                else {
+                    isMatch = dbUser.passwordHash === password;
+                }
+            }
+            if (!dbUser || !isMatch) {
                 res.status(401).json({ success: false, error: { message: 'Invalid email or password' } });
                 return;
             }
@@ -212,7 +222,17 @@ app.post('/api/auth/login', async (req, res) => {
     }
     // Fallback memory login
     const user = fallbackUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!user || password !== user.password) {
+    let isMatch = false;
+    if (user) {
+        const hash = user.passwordHash || user.password || '';
+        if (hash.startsWith('$2a$') || hash.startsWith('$2b$')) {
+            isMatch = await bcrypt.compare(password, hash);
+        }
+        else {
+            isMatch = hash === password;
+        }
+    }
+    if (!user || !isMatch) {
         res.status(401).json({ success: false, error: { message: 'Invalid email or password' } });
         return;
     }
@@ -223,6 +243,89 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', authMiddleware, (req, res) => {
     const user = req.user;
     res.json({ success: true, data: { user } });
+});
+// User Account Management (ADMIN ONLY)
+app.get('/api/users', authMiddleware, requireRole('ADMIN'), async (_req, res) => {
+    await checkDatabaseConnection();
+    if (isDbConnected) {
+        try {
+            const users = await prisma.user.findMany({
+                select: { id: true, name: true, email: true, role: true, createdAt: true },
+                orderBy: { createdAt: 'desc' }
+            });
+            res.json({ success: true, data: users });
+            return;
+        }
+        catch (err) {
+            console.warn('Prisma users fetch fallback:', err);
+        }
+    }
+    const safeUsers = fallbackUsers.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        createdAt: new Date().toISOString()
+    }));
+    res.json({ success: true, data: safeUsers });
+});
+app.post('/api/users', authMiddleware, requireRole('ADMIN'), async (req, res) => {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password || !role) {
+        res.status(400).json({ success: false, error: { message: 'All fields (name, email, password, role) are required' } });
+        return;
+    }
+    const validRoles = ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'];
+    if (!validRoles.includes(role)) {
+        res.status(400).json({ success: false, error: { message: `Invalid role. Must be one of: ${validRoles.join(', ')}` } });
+        return;
+    }
+    const cleanEmail = email.toLowerCase().trim();
+    const passwordHash = await bcrypt.hash(password, 10);
+    await checkDatabaseConnection();
+    if (isDbConnected) {
+        try {
+            const newUser = await prisma.user.create({
+                data: {
+                    name,
+                    email: cleanEmail,
+                    passwordHash,
+                    role
+                },
+                select: { id: true, name: true, email: true, role: true, createdAt: true }
+            });
+            res.status(201).json({ success: true, data: newUser });
+            return;
+        }
+        catch (err) {
+            if (err?.code === 'P2002') {
+                res.status(400).json({ success: false, error: { message: `Account with email '${cleanEmail}' already exists` } });
+                return;
+            }
+            console.warn('Prisma user create fallback:', err);
+        }
+    }
+    const existing = fallbackUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+        res.status(400).json({ success: false, error: { message: `Account with email '${cleanEmail}' already exists` } });
+        return;
+    }
+    const createdUser = {
+        id: uuidv4(),
+        name,
+        email: cleanEmail,
+        passwordHash,
+        role
+    };
+    fallbackUsers.push(createdUser);
+    const safe = {
+        id: createdUser.id,
+        name: createdUser.name,
+        email: createdUser.email,
+        role: createdUser.role,
+        createdAt: new Date().toISOString()
+    };
+    res.status(201).json({ success: true, data: safe });
 });
 // Customers Endpoints (CRM)
 app.get('/api/customers', authMiddleware, async (req, res) => {
