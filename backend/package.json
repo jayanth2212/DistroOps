@@ -3,11 +3,13 @@
     "version": "1.0.0",
     "private": true,
     "type": "module",
+    "engines": {
+        "node": "20.x"
+    },
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "build": "npx prisma generate && tsc -p tsconfig.json",
         "start": "node dist/server.js",
-        "postinstall": "npx prisma generate",
         "db:push": "npx prisma db push",
         "db:seed": "npx prisma db seed",
         "db:studio": "npx prisma studio",
