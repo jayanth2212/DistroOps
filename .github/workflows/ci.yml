@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js Environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -23,7 +23,8 @@ jobs:
         run: |
           cd backend
           npm install
-          npx prisma generate
+          chmod +x node_modules/.bin/* || true
+          npm run db:generate
           npm run build
 
       - name: Build Frontend
