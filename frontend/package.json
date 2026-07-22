@@ -9,7 +9,7 @@
     "scripts": {
         "dev": "node node_modules/vite/bin/vite.js",
         "build": "node node_modules/typescript/bin/tsc -b && node node_modules/vite/bin/vite.js build",
-        "preview": "node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port $PORT"
+        "preview": "node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port $PORT --allowed-hosts true"
     },
     "dependencies": {
         "react": "^18.3.1",
