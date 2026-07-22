@@ -945,6 +945,26 @@ export default function App() {
             </div>
           </div>
         </section>
+
+        <footer
+          style={{
+            marginTop: 40,
+            marginBottom: 24,
+            padding: "20px 24px",
+            borderTop: "1px solid var(--border)",
+            textAlign: "center",
+            background: "var(--panel)",
+            borderRadius: "var(--radius)",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+            Developed and Designed by Jayanth - 5C2
+          </div>
+          <div style={{ fontSize: 13, color: "var(--slate)" }}>
+            Organization: <strong>GCET</strong>
+          </div>
+        </footer>
       </div>
     );
   }
