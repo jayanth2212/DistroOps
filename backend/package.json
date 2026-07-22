@@ -8,7 +8,7 @@
     },
     "scripts": {
         "dev": "tsx watch src/server.ts",
-        "build": "node node_modules/prisma/build/index.js generate && tsc -p tsconfig.json",
+        "build": "node node_modules/prisma/build/index.js generate && node node_modules/typescript/bin/tsc -p tsconfig.json",
         "start": "node dist/server.js",
         "db:push": "node node_modules/prisma/build/index.js db push",
         "db:seed": "node node_modules/prisma/build/index.js db seed",
