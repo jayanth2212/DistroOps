@@ -31,4 +31,5 @@ jobs:
         run: |
           cd frontend
           npm install
+          chmod -R +x node_modules/.bin || true
           npm run build
