@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: distroops-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: distroops
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: distroops-backend
+    restart: always
+    ports:
+      - '4000:4000'
+    environment:
+      DATABASE_URL: 'postgresql://postgres:postgrespassword@postgres:5432/distroops?schema=public'
+      JWT_SECRET: 'distroops-docker-secret-key-2026'
+      PORT: 4000
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: distroops-frontend
+    restart: always
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

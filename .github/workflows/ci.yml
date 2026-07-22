@@ -1,0 +1,33 @@
+name: DistroOps Continuous Integration (CI)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Build Backend
+        run: |
+          cd backend
+          npm install
+          npx prisma generate
+          npm run build
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build

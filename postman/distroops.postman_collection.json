@@ -1,0 +1,353 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+		"name": "DistroOps Mini ERP + CRM API",
+		"description": "Complete Postman REST API Collection for DistroOps ERP/CRM Operations Portal.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data.token) {",
+									"    pm.environment.set('token', jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@distroops.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Current User Profile (/auth/me)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Customers CRM",
+			"item": [
+				{
+					"name": "Get All Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customers?status=ACTIVE",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customers"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "ACTIVE"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create New Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Apex Global Distribution\",\n  \"mobile\": \"9811223344\",\n  \"email\": \"procurement@apexglobal.com\",\n  \"businessName\": \"Apex Corp\",\n  \"gstNumber\": \"27AAACA9876E1Z2\",\n  \"customerType\": \"WHOLESALE\",\n  \"address\": \"Building 7, Logistics Park, Pune\",\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customers"
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Follow-up Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Discussed Q3 inventory bulk purchase discount contract.\",\n  \"followUpDate\": \"2026-08-01T10:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customers/c-1/followups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customers",
+								"c-1",
+								"followups"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Products & Inventory",
+			"item": [
+				{
+					"name": "Get Products (With Low Stock Alert Filter)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/products?lowStock=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "lowStock",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Heavy Duty Copper Wire 2.5mm\",\n  \"sku\": \"WIRE-CU-25\",\n  \"category\": \"Electrical\",\n  \"unitPrice\": 185.00,\n  \"currentStock\": 100,\n  \"minStockAlert\": 20,\n  \"location\": \"Warehouse B - Shelf 02\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "Record Stock Movement (IN/OUT)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quantityChanged\": 50,\n  \"movementType\": \"IN\",\n  \"reason\": \"Supplier Restock Delivery Shipment\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/products/p-1/stock-movements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"p-1",
+								"stock-movements"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Sales Challans",
+			"item": [
+				{
+					"name": "Create Draft Sales Challan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerId\": \"c-1\",\n  \"items\": [\n    {\n      \"productId\": \"p-1\",\n      \"quantity\": 10\n    },\n    {\n      \"productId\": \"p-2\",\n      \"quantity\": 5\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/challans",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"challans"
+							]
+						}
+					}
+				},
+				{
+					"name": "Confirm Sales Challan (Deducts Stock & Logs OUT Audit)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/challans/ch-1/confirm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"challans",
+								"ch-1",
+								"confirm"
+							]
+						}
+					}
+				},
+				{
+					"name": "Cancel Sales Challan (Restores Stock)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/challans/ch-1/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"challans",
+								"ch-1",
+								"cancel"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:4000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
