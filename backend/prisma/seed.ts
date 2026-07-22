@@ -51,8 +51,11 @@ async function main() {
   });
 
   // Seed Customers
-  const customer1 = await prisma.customer.create({
-    data: {
+  const customer1 = await prisma.customer.upsert({
+    where: { id: 'c-1' },
+    update: {},
+    create: {
+      id: 'c-1',
       name: 'Asha Industrial Traders',
       mobile: '9876543210',
       email: 'asha@industrial.com',
@@ -65,8 +68,11 @@ async function main() {
     }
   });
 
-  const customer2 = await prisma.customer.create({
-    data: {
+  const customer2 = await prisma.customer.upsert({
+    where: { id: 'c-2' },
+    update: {},
+    create: {
+      id: 'c-2',
       name: 'Ravi Distributors & Co',
       mobile: '9123456780',
       email: 'contact@ravidistributors.com',
@@ -84,6 +90,7 @@ async function main() {
     where: { sku: 'BOLT-SS-10' },
     update: {},
     create: {
+      id: 'p-1',
       name: 'Stainless Steel Bolt 10mm',
       sku: 'BOLT-SS-10',
       category: 'Fasteners',
@@ -98,6 +105,7 @@ async function main() {
     where: { sku: 'PVC-HD-01' },
     update: {},
     create: {
+      id: 'p-2',
       name: 'Heavy Duty PVC Pipe 1 Inch',
       sku: 'PVC-HD-01',
       category: 'Plumbing',
