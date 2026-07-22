@@ -8,12 +8,12 @@
     },
     "scripts": {
         "dev": "tsx watch src/server.ts",
-        "build": "npx prisma generate && tsc -p tsconfig.json",
+        "build": "node node_modules/prisma/build/index.js generate && tsc -p tsconfig.json",
         "start": "node dist/server.js",
-        "db:push": "npx prisma db push",
-        "db:seed": "npx prisma db seed",
-        "db:studio": "npx prisma studio",
-        "db:generate": "npx prisma generate"
+        "db:push": "node node_modules/prisma/build/index.js db push",
+        "db:seed": "node node_modules/prisma/build/index.js db seed",
+        "db:studio": "node node_modules/prisma/build/index.js studio",
+        "db:generate": "node node_modules/prisma/build/index.js generate"
     },
     "prisma": {
         "seed": "tsx prisma/seed.ts"
